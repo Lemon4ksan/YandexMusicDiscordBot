@@ -352,8 +352,8 @@ class VoiceExtension:
         Returns:
             bool: Check result.
         """
-        if not ctx.user or not ctx.guild:
-            logging.warning("[VC_EXT] User or guild not found in context inside 'voice_check'")
+        if not ctx.user or not ctx.guild_id:
+            logging.warning("[VC_EXT] User or guild id not found in context inside 'voice_check'")
             await ctx.respond("❌ Что-то пошло не так. Попробуйте еще раз.", delete_after=15, ephemeral=True)
             return False
 
@@ -379,7 +379,7 @@ class VoiceExtension:
             return False
         
         if check_vibe_privilage:
-            guild = await self.db.get_guild(ctx.guild.id, projection={'current_viber_id': 1, 'vibing': 1})
+            guild = await self.db.get_guild(ctx.guild_id, projection={'current_viber_id': 1, 'vibing': 1})
             if guild['vibing'] and ctx.user.id != guild['current_viber_id']:
                 logging.debug("[VIBE] Context user is not the current viber")
                 await ctx.respond("❌ Вы не можете взаимодействовать с чужой волной!", delete_after=15, ephemeral=True)

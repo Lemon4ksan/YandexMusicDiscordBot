@@ -593,7 +593,7 @@ class MenuView(View, VoiceExtension):
         if not self.ctx.guild_id:
             return self
 
-        self.guild = await self.db.get_guild(self.ctx.guild_id, projection={'repeat': 1, 'shuffle': 1, 'current_track': 1, 'vibing': 1})
+        self.guild = await self.db.get_guild(self.ctx.guild_id, projection={'repeat': 1, 'shuffle': 1, 'current_track': 1, 'current_menu': 1, 'vibing': 1})
     
         if self.guild['repeat']:
             self.repeat_button.style = ButtonStyle.success

@@ -1,0 +1,33 @@
+services:
+  app:
+    container_name: yandex-music-discord-bot
+    image: deadcxap/yandexmusicdiscordbot:latest
+    restart: unless-stopped
+    depends_on:
+      - mongodb
+    env_file:
+      - .env
+    environment:
+      MONGO_URI: "mongodb://ymdb-mongodb:27017"
+    networks:
+      - ymdb_network
+  mongodb:
+    container_name: ymdb-mongodb
+    image: mongo:latest
+    restart: unless-stopped
+    volumes:
+      - mongodb_data:/data/db
+      - ./init-mongodb.js:/docker-entrypoint-initdb.d/init-mongodb.js:ro
+    networks:
+      - ymdb_network
+    healthcheck:
+      test: echo 'db.runCommand("ping").ok' | mongo localhost:27017 --quiet
+      interval: 30s
+      timeout: 10s
+      retries: 5
+
+volumes:
+  mongodb_data:
+
+networks:
+  ymdb_network:

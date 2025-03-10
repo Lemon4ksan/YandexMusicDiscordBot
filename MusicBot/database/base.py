@@ -1,3 +1,4 @@
+import os
 from typing import Iterable, Any, cast
 from pymongo import AsyncMongoClient, ReturnDocument, UpdateOne
 from pymongo.asynchronous.collection import AsyncCollection
@@ -6,7 +7,8 @@ from pymongo.results import UpdateResult
 from .user import User, ExplicitUser
 from .guild import Guild, ExplicitGuild, MessageVotes
 
-client: AsyncMongoClient = AsyncMongoClient("mongodb://localhost:27017/")
+mongo_server = os.getenv('MONGO_URI')
+client: AsyncMongoClient = AsyncMongoClient(mongo_server)
 
 db = client.YandexMusicBot
 users: AsyncCollection[ExplicitUser] = db.users

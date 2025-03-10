@@ -203,16 +203,21 @@ class Voice(Cog, VoiceExtension):
     
     @voice.command(name="menu", description="Создать или обновить меню проигрывателя.")
     async def menu(self, ctx: discord.ApplicationContext) -> None:
-        logging.info(f"[VOICE] Menu command invoked by user {ctx.author.id} in guild {ctx.guild.id}")
+        logging.info(f"[VOICE] Menu command invoked by user {ctx.author.id} in guild {ctx.guild_id}")
         if await self.voice_check(ctx) and not await self.send_menu_message(ctx):
             await ctx.respond("❌ Не удалось создать меню.", ephemeral=True)
 
     @voice.command(name="join", description="Подключиться к голосовому каналу, в котором вы сейчас находитесь.")
     async def join(self, ctx: discord.ApplicationContext) -> None:
-        logging.info(f"[VOICE] Join command invoked by user {ctx.author.id} in guild {ctx.guild.id}")
+        logging.info(f"[VOICE] Join command invoked by user {ctx.author.id} in guild {ctx.guild_id}")
+        
+        if not ctx.guild_id:
+            logging.warning("[VOICE] Join command invoked without guild_id")
+            await ctx.respond("❌ Эта команда может быть использована только на сервере.", ephemeral=True)
+            return
 
         member = cast(discord.Member, ctx.author)
-        guild = await self.db.get_guild(ctx.guild.id, projection={'allow_change_connect': 1})
+        guild = await self.db.get_guild(ctx.guild_id, projection={'allow_change_connect': 1})
 
         await ctx.defer(ephemeral=True)
         if not member.guild_permissions.manage_channels and not guild['allow_change_connect']:
@@ -234,13 +239,18 @@ class Voice(Cog, VoiceExtension):
 
     @voice.command(description="Заставить бота покинуть голосовой канал.")
     async def leave(self, ctx: discord.ApplicationContext) -> None:
-        logging.info(f"[VOICE] Leave command invoked by user {ctx.author.id} in guild {ctx.guild.id}")
+        logging.info(f"[VOICE] Leave command invoked by user {ctx.author.id} in guild {ctx.guild_id}")
+        
+        if not ctx.guild_id:
+            logging.warning("[VOICE] Leave command invoked without guild_id")
+            await ctx.respond("❌ Эта команда может быть использована только на сервере.", ephemeral=True)
+            return
 
         member = cast(discord.Member, ctx.author)
-        guild = await self.db.get_guild(ctx.guild.id, projection={'allow_change_connect': 1})
+        guild = await self.db.get_guild(ctx.guild_id, projection={'allow_change_connect': 1})
 
         if not member.guild_permissions.manage_channels and not guild['allow_change_connect']:
-            logging.info(f"[VOICE] User {ctx.author.id} does not have permissions to execute leave command in guild {ctx.guild.id}")
+            logging.info(f"[VOICE] User {ctx.author.id} does not have permissions to execute leave command in guild {ctx.guild_id}")
             await ctx.respond("❌ У вас нет прав для выполнения этой команды.", delete_after=15, ephemeral=True)
             return
 
@@ -252,13 +262,18 @@ class Voice(Cog, VoiceExtension):
 
             await vc.disconnect(force=True)
             await ctx.respond("✅ Отключение успешно!", delete_after=15, ephemeral=True)
-            logging.info(f"[VOICE] Successfully disconnected from voice channel in guild {ctx.guild.id}")
+            logging.info(f"[VOICE] Successfully disconnected from voice channel in guild {ctx.guild_id}")
         else:
             await ctx.respond("❌ Бот не подключен к голосовому каналу.", delete_after=15, ephemeral=True)
 
     @queue.command(description="Очистить очередь треков и историю прослушивания.")
     async def clear(self, ctx: discord.ApplicationContext) -> None:
-        logging.info(f"[VOICE] Clear queue command invoked by user {ctx.author.id} in guild {ctx.guild.id}")
+        logging.info(f"[VOICE] Clear queue command invoked by user {ctx.author.id} in guild {ctx.guild_id}")
+        
+        if not ctx.guild_id:
+            logging.warning("[VOICE] Clear command invoked without guild_id")
+            await ctx.respond("❌ Эта команда может быть использована только на сервере.", ephemeral=True)
+            return
 
         if not await self.voice_check(ctx):
             return
@@ -267,7 +282,7 @@ class Voice(Cog, VoiceExtension):
         channel = cast(discord.VoiceChannel, ctx.channel)
 
         if len(channel.members) > 2 and not member.guild_permissions.manage_channels:
-            logging.info(f"Starting vote for clearing queue in guild {ctx.guild.id}")
+            logging.info(f"Starting vote for clearing queue in guild {ctx.guild_id}")
             
             response_message = f"{member.mention} хочет очистить историю прослушивания и очередь треков.\n\n Выполнить действие?."
             message = cast(discord.Interaction, await ctx.respond(response_message, delete_after=60))
@@ -289,19 +304,24 @@ class Voice(Cog, VoiceExtension):
             )
             return
 
-        await self.db.update(ctx.guild.id, {'previous_tracks': [], 'next_tracks': []})
+        await self.db.update(ctx.guild_id, {'previous_tracks': [], 'next_tracks': []})
         await ctx.respond("✅ Очередь и история сброшены.", delete_after=15, ephemeral=True)
-        logging.info(f"[VOICE] Queue and history cleared in guild {ctx.guild.id}")
+        logging.info(f"[VOICE] Queue and history cleared in guild {ctx.guild_id}")
 
     @queue.command(description="Получить очередь треков.")
     async def get(self, ctx: discord.ApplicationContext) -> None:
-        logging.info(f"[VOICE] Get queue command invoked by user {ctx.author.id} in guild {ctx.guild.id}")
+        logging.info(f"[VOICE] Get queue command invoked by user {ctx.author.id} in guild {ctx.guild_id}")
+        
+        if not ctx.guild_id:
+            logging.warning("[VOICE] Get command invoked without guild_id")
+            await ctx.respond("❌ Эта команда может быть использована только на сервере.", ephemeral=True)
+            return
 
         if not await self.voice_check(ctx):
             return
         await self.users_db.update(ctx.user.id, {'queue_page': 0})
 
-        tracks = await self.db.get_tracks_list(ctx.guild.id, 'next')
+        tracks = await self.db.get_tracks_list(ctx.guild_id, 'next')
         if len(tracks) == 0:
             await ctx.respond("❌ Очередь пуста.", ephemeral=True)
             return
@@ -309,11 +329,16 @@ class Voice(Cog, VoiceExtension):
         embed = generate_queue_embed(0, tracks)
         await ctx.respond(embed=embed, view=await QueueView(ctx).init(), ephemeral=True)
 
-        logging.info(f"[VOICE] Queue embed sent to user {ctx.author.id} in guild {ctx.guild.id}")
+        logging.info(f"[VOICE] Queue embed sent to user {ctx.author.id} in guild {ctx.guild_id}")
 
     @voice.command(description="Прервать проигрывание, удалить историю, очередь и текущий плеер.")
     async def stop(self, ctx: discord.ApplicationContext) -> None:
-        logging.info(f"[VOICE] Stop command invoked by user {ctx.author.id} in guild {ctx.guild.id}")
+        logging.info(f"[VOICE] Stop command invoked by user {ctx.author.id} in guild {ctx.guild_id}")
+        
+        if not ctx.guild_id:
+            logging.warning("[VOICE] Stop command invoked without guild_id")
+            await ctx.respond("❌ Эта команда может быть использована только на сервере.", ephemeral=True)
+            return
 
         if not await self.voice_check(ctx):
             return
@@ -322,7 +347,7 @@ class Voice(Cog, VoiceExtension):
         channel = cast(discord.VoiceChannel, ctx.channel)
 
         if len(channel.members) > 2 and not member.guild_permissions.manage_channels:
-            logging.info(f"Starting vote for stopping playback in guild {ctx.guild.id}")
+            logging.info(f"Starting vote for stopping playback in guild {ctx.guild_id}")
 
             response_message = f"{member.mention} хочет полностью остановить проигрывание.\n\n Выполнить действие?."
             message = cast(discord.Interaction, await ctx.respond(response_message, delete_after=60))
@@ -351,7 +376,7 @@ class Voice(Cog, VoiceExtension):
         else:
             await ctx.respond("❌ Произошла ошибка при остановке воспроизведения.", delete_after=15, ephemeral=True)
 
-    @voice.command(name='vibe', description="Запустить Мою Волну.")
+    @voice.command(description="Запустить Мою Волну.")
     @discord.option(
         "запрос",
         parameter_name='name',
@@ -360,15 +385,20 @@ class Voice(Cog, VoiceExtension):
         autocomplete=discord.utils.basic_autocomplete(get_vibe_stations_suggestions),
         required=False
     )
-    async def user_vibe(self, ctx: discord.ApplicationContext, name: str | None = None) -> None:
+    async def vibe(self, ctx: discord.ApplicationContext, name: str | None = None) -> None:
         logging.info(f"[VOICE] Vibe (user) command invoked by user {ctx.user.id} in guild {ctx.guild_id}")
         if not await self.voice_check(ctx):
             return
+        
+        if not ctx.guild_id:
+            logging.warning("[VOICE] Vibe command invoked without guild_id")
+            await ctx.respond("❌ Эта команда может быть использована только на сервере.", ephemeral=True)
+            return
 
-        guild = await self.db.get_guild(ctx.guild.id, projection={'current_menu': 1, 'vibing': 1})
+        guild = await self.db.get_guild(ctx.guild_id, projection={'current_menu': 1, 'vibing': 1})
 
         if guild['vibing']:
-            logging.info(f"[VOICE] Action declined: vibing is already enabled in guild {ctx.guild.id}")
+            logging.info(f"[VOICE] Action declined: vibing is already enabled in guild {ctx.guild_id}")
             await ctx.respond("❌ Моя Волна уже включена. Используйте /voice stop, чтобы остановить воспроизведение.", delete_after=15, ephemeral=True)
             return
 
@@ -411,7 +441,7 @@ class Voice(Cog, VoiceExtension):
         channel = cast(discord.VoiceChannel, ctx.channel)
         
         if len(channel.members) > 2 and not member.guild_permissions.manage_channels:
-            logging.info(f"Starting vote for starting vibe in guild {ctx.guild.id}")
+            logging.info(f"Starting vote for starting vibe in guild {ctx.guild_id}")
 
             if _type == 'user' and _id == 'onyourwave':
                 station = "Моя Волна"

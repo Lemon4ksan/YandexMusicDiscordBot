@@ -1,3 +1,4 @@
+import logging
 from typing import Literal, cast
 
 import discord
@@ -19,7 +20,12 @@ class Settings(Cog):
 
     @settings.command(name="show", description="Показать текущие настройки бота.")
     async def show(self, ctx: discord.ApplicationContext) -> None:
-        guild = await self.db.get_guild(ctx.guild.id, projection={'allow_change_connect': 1, 'vote_switch_track': 1, 'vote_add': 1})
+        if not ctx.guild_id:
+            logging.warning("[SETTINGS] Show command invoked without guild_id")
+            await ctx.respond("❌ Эта команда может быть использована только на сервере.", ephemeral=True)
+            return
+
+        guild = await self.db.get_guild(ctx.guild_id, projection={'allow_change_connect': 1, 'vote_switch_track': 1, 'vote_add': 1})
 
         vote = "✅ - Переключение" if guild['vote_switch_track'] else "❌ - Переключение"
         vote += "\n✅ - Добавление в очередь" if guild['vote_add'] else "\n❌ - Добавление в очередь"
@@ -49,20 +55,25 @@ class Settings(Cog):
         if not member.guild_permissions.manage_channels:
             await ctx.respond("❌ У вас нет прав для выполнения этой команды.", delete_after=15, ephemeral=True)
             return
+        
+        if not ctx.guild_id:
+            logging.warning("[SETTINGS] Toggle command invoked without guild_id")
+            await ctx.respond("❌ Эта команда может быть использована только на сервере.", ephemeral=True)
+            return
 
-        guild = await self.db.get_guild(ctx.guild.id, projection={
+        guild = await self.db.get_guild(ctx.guild_id, projection={
             'vote_switch_track': 1, 'vote_add': 1, 'allow_change_connect': 1})
 
         if vote_type == 'Переключение':
-            await self.db.update(ctx.guild.id, {'vote_switch_track': not guild['vote_switch_track']})
+            await self.db.update(ctx.guild_id, {'vote_switch_track': not guild['vote_switch_track']})
             response_message = "Голосование за переключение трека " + ("❌ выключено." if guild['vote_switch_track'] else "✅ включено.")
 
         elif vote_type == 'Добавление в очередь':
-            await self.db.update(ctx.guild.id, {'vote_add': not guild['vote_add']})
+            await self.db.update(ctx.guild_id, {'vote_add': not guild['vote_add']})
             response_message = "Голосование за добавление в очередь " + ("❌ выключено." if guild['vote_add'] else "✅ включено.")
 
         elif vote_type == 'Добавление/Отключение бота':
-            await self.db.update(ctx.guild.id, {'allow_change_connect': not guild['allow_change_connect']})
+            await self.db.update(ctx.guild_id, {'allow_change_connect': not guild['allow_change_connect']})
             response_message = f"Добавление/Отключение бота от канала теперь {'✅ разрешено' if not guild['allow_change_connect'] else '❌ запрещено'} участникам без прав управления каналом."
 
         else:

@@ -176,7 +176,7 @@ class General(Cog):
     @account.command(description="Ввести токен Яндекс Музыки.")
     @discord.option("token", type=discord.SlashCommandOptionType.string, description="Токен.")
     async def login(self, ctx: discord.ApplicationContext, token: str) -> None:
-        logging.info(f"[GENERAL] Login command invoked by user {ctx.author.id} in guild {ctx.guild.id}")
+        logging.info(f"[GENERAL] Login command invoked by user {ctx.author.id} in guild {ctx.guild_id}")
         try:
             client = await YMClient(token).init()
         except UnauthorizedError:
@@ -196,7 +196,7 @@ class General(Cog):
     
     @account.command(description="Удалить токен из базы данных бота.")
     async def remove(self, ctx: discord.ApplicationContext) -> None:
-        logging.info(f"[GENERAL] Remove command invoked by user {ctx.author.id} in guild {ctx.guild.id}")
+        logging.info(f"[GENERAL] Remove command invoked by user {ctx.author.id} in guild {ctx.guild_id}")
         if not await self.users_db.get_ym_token(ctx.user.id):
             logging.info(f"[GENERAL] No token found for user {ctx.author.id}")
             await ctx.respond('❌ Токен не указан.', delete_after=15, ephemeral=True)
@@ -208,7 +208,7 @@ class General(Cog):
 
     @account.command(description="Получить плейлист «Мне нравится»")
     async def likes(self, ctx: discord.ApplicationContext) -> None:
-        logging.info(f"[GENERAL] Likes command invoked by user {ctx.author.id} in guild {ctx.guild.id}")
+        logging.info(f"[GENERAL] Likes command invoked by user {ctx.author.id} in guild {ctx.guild_id}")
 
         token = await self.users_db.get_ym_token(ctx.user.id)
         if not token:
@@ -223,7 +223,13 @@ class General(Cog):
             await ctx.respond('❌ Неверный токен. Укажите новый через /account login.', delete_after=15, ephemeral=True)
             return
 
-        likes = await client.users_likes_tracks()
+        try:
+            likes = await client.users_likes_tracks()
+        except UnauthorizedError:
+            logging.warning(f"[GENERAL] Unknown token error for user {ctx.user.id}")
+            await ctx.respond("❌ Произошла неизвестная ошибка при попытке получения лайков. Пожалуйста, сообщите об этом разработчику.", delete_after=15, ephemeral=True)
+            return
+
         if likes is None:
             logging.info(f"[GENERAL] Failed to fetch likes for user {ctx.user.id}")
             await ctx.respond('❌ Что-то пошло не так. Повторите попытку позже.', delete_after=15, ephemeral=True)

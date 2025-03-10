@@ -18,7 +18,7 @@ class PlayButton(Button, VoiceExtension):
     async def callback(self, interaction: Interaction) -> None:
         logging.debug(f"[FIND] Callback triggered for type: '{type(self.item).__name__}'")
 
-        if not interaction.guild:
+        if not interaction.guild_id:
             logging.info("[FIND] No guild found in PlayButton callback")
             await interaction.respond("❌ Эта команда доступна только на серверах.", ephemeral=True, delete_after=15)
             return
@@ -26,7 +26,7 @@ class PlayButton(Button, VoiceExtension):
         if not await self.voice_check(interaction):
             return
 
-        guild = await self.db.get_guild(interaction.guild.id, projection={'current_track': 1, 'current_menu': 1, 'vote_add': 1, 'vibing': 1})
+        guild = await self.db.get_guild(interaction.guild_id, projection={'current_track': 1, 'current_menu': 1, 'vote_add': 1, 'vibing': 1})
         if guild['vibing']:
             await interaction.respond("❌ Нельзя добавлять треки в очередь, пока запущена волна.", ephemeral=True, delete_after=15)
             return
@@ -100,7 +100,7 @@ class PlayButton(Button, VoiceExtension):
             await response.add_reaction('❌')
 
             await self.db.update_vote(
-                interaction.guild.id,
+                interaction.guild_id,
                 response.id,
                 {
                     'positive_votes': list(),
@@ -119,11 +119,11 @@ class PlayButton(Button, VoiceExtension):
 
         if guild['current_track']:
             logging.debug(f"[FIND] Adding tracks to queue")
-            await self.db.modify_track(interaction.guild.id, tracks, 'next', 'extend')
+            await self.db.modify_track(interaction.guild_id, tracks, 'next', 'extend')
         else:
             logging.debug(f"[FIND] Playing track")
             track = tracks.pop(0)
-            await self.db.modify_track(interaction.guild.id, tracks, 'next', 'extend')
+            await self.db.modify_track(interaction.guild_id, tracks, 'next', 'extend')
             if not await self.play_track(interaction, track):
                 await interaction.respond('❌ Не удалось воспроизвести трек.', ephemeral=True, delete_after=15)
 
