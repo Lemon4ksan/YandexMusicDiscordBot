@@ -10,13 +10,12 @@ class MessageVotes(TypedDict):
     ]
     vote_content: Any | None
 
-class Guild(TypedDict, total=False):
+class Guild(TypedDict, total=False):  # Don't forget to change base.py if you add a new field
     next_tracks: list[dict[str, Any]]
     previous_tracks: list[dict[str, Any]]
     current_track: dict[str, Any] | None
     current_menu: int | None
-    is_stopped: bool
-    always_allow_menu: bool
+    is_stopped: bool  # Prevents the `after` callback of play_track
     allow_change_connect: bool
     vote_switch_track: bool
     vote_add: bool
@@ -25,6 +24,8 @@ class Guild(TypedDict, total=False):
     votes: dict[str, MessageVotes]
     vibing: bool
     current_viber_id: int | None
+    use_single_token: bool
+    single_token_uid: int | None
 
 class ExplicitGuild(TypedDict):
     _id: int
@@ -32,8 +33,7 @@ class ExplicitGuild(TypedDict):
     previous_tracks: list[dict[str, Any]]
     current_track: dict[str, Any] | None
     current_menu: int | None
-    is_stopped: bool  # Prevents the `after` callback of play_track
-    always_allow_menu: bool
+    is_stopped: bool
     allow_change_connect: bool
     vote_switch_track: bool
     vote_add: bool
@@ -42,3 +42,5 @@ class ExplicitGuild(TypedDict):
     votes: dict[str, MessageVotes]
     vibing: bool
     current_viber_id: int | None
+    use_single_token: bool
+    single_token_uid: int | None

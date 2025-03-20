@@ -68,14 +68,44 @@ pip install -r requirements.txt
 Создайте файл `.env` и добавьте в него переменные окружения. Пример:
 
 ```env
-TOKEN='XXXXXX'  # Токен бота
-EXPLICIT_EID='1325879701117472869'  # ID эмодзи explicit
-DEBUG='False'  # Включение DEBUG логов (True/False)
+TOKEN='XXXXXX'                          # Токен бота
+DEBUG='False'                           # Включение DEBUG логов (True/False)
+EXPLICIT_EID='1325879701117472869'      # ID эмодзи explicit
+MONGO_URI='mongodb://localhost:27017/'  # Адрес сервера MongoDB
 ```
 
 Запустите сервер MongoDB (настройки по умолчанию) и создайте базу данных YandexMusicBot с коллекциями guilds и users (через Compass или mongosh).
 
 Запустите бота (`python ./MusicBot/main.py`).
+
+## Запуск в Docker ![Main Build](https://img.shields.io/github/actions/workflow/status/lemon4ksan/YandexMusicDiscordBot/docker-image.yml?branch=main&label=main) ![Dev Build](https://img.shields.io/github/actions/workflow/status/lemon4ksan/YandexMusicDiscordBot/docker-image.yml?branch=dev&label=dev)
+
+Возможен запуск как из командной строки, так и с помощью docker-compose.
+
+### docker cli
+
+> [!NOTE]
+> При этом методе запуска вам необходимо самостоятельно установить MongoDB и указать адрес сервера в команде запуска.
+
+```bash
+docker run -d \
+  --name yandex-music-discord-bot \
+  --restart unless-stopped \
+  -e TOKEN=XXXXXX \
+  -e EXPLICIT_EID=1325879701117472869 \
+  -e DEBUG=False \
+  -e MONGO_URI="mongodb://mongodb:27017/" \
+  lemon4ksan/yandexmusicdiscordbot:latest
+```
+
+### docker-compose (рекомендованный)
+
+> [!NOTE]
+> При первом запуске БД и коллекции будут созданы автоматически.
+
+```bash
+docker-compose up -d
+```
 
 ## Настройка бота
 

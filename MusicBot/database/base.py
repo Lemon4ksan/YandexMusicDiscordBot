@@ -1,3 +1,4 @@
+import os
 from typing import Iterable, Any, cast
 from pymongo import AsyncMongoClient, ReturnDocument, UpdateOne
 from pymongo.asynchronous.collection import AsyncCollection
@@ -6,7 +7,11 @@ from pymongo.results import UpdateResult
 from .user import User, ExplicitUser
 from .guild import Guild, ExplicitGuild, MessageVotes
 
-client: AsyncMongoClient = AsyncMongoClient("mongodb://localhost:27017/")
+mongo_server = os.getenv('MONGO_URI')
+if not mongo_server:
+    raise ValueError('MONGO_URI environment variable is not set')
+
+client: AsyncMongoClient = AsyncMongoClient(mongo_server)
 
 db = client.YandexMusicBot
 users: AsyncCollection[ExplicitUser] = db.users
@@ -15,9 +20,6 @@ guilds: AsyncCollection[ExplicitGuild] = db.guilds
 class BaseUsersDatabase:
     DEFAULT_USER = User(
         ym_token=None,
-        playlists=[],
-        playlists_page=0,
-        queue_page=0,
         vibe_batch_id=None,
         vibe_type=None,
         vibe_id=None,
@@ -65,10 +67,14 @@ class BaseUsersDatabase:
         )
         return cast(str | None, user.get('ym_token') if user else None)
 
-    async def add_playlist(self, uid: int, playlist_data: dict) -> UpdateResult:
-        return await users.update_one(
+    async def reset_vibe_settings(self, uid: int) -> None:
+        await users.update_one(
             {'_id': uid},
-            {'$push': {'playlists': playlist_data}}
+            {'$set': {'vibe_settings': {
+                'mood': 'all',
+                'diversity': 'default',
+                'lang': 'any'
+            }}}
         )
 
 
@@ -79,7 +85,6 @@ class BaseGuildsDatabase:
         current_track=None,
         current_menu=None,
         is_stopped=True,
-        always_allow_menu=False,
         allow_change_connect=True,
         vote_switch_track=True,
         vote_add=True,
@@ -87,7 +92,9 @@ class BaseGuildsDatabase:
         repeat=False,
         votes={},
         vibing=False,
-        current_viber_id=None
+        current_viber_id=None,
+        use_single_token=False,
+        single_token_uid=None
     )
 
     async def update(self, gid: int, data: Guild | dict[str, Any]) -> UpdateResult:
@@ -124,10 +131,4 @@ class BaseGuildsDatabase:
         return await guilds.update_one(
             {'_id': gid},
             {'$set': {f'votes.{mid}': data}}
-        )
-
-    async def clear_queue(self, gid: int) -> UpdateResult:
-        return await guilds.update_one(
-            {'_id': gid},
-            {'$set': {'next_tracks': []}}
         )

@@ -1,8 +1,9 @@
 from .embeds import generate_item_embed
-from .voice_extension import VoiceExtension, menu_views
+from .voice_extension import VoiceExtension
+from .base_bot import BaseBot
 
 __all__ = [
     "generate_item_embed",
     "VoiceExtension",
-    "menu_views"
+    "BaseBot"
 ]
