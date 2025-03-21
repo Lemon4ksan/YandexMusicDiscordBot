@@ -2,10 +2,11 @@ import asyncio
 import aiofiles
 import logging
 import io
+
 from typing import Any, Literal, cast
 
 import yandex_music.exceptions
-from yandex_music import Track, TrackShort, ClientAsync as YMClient
+from yandex_music import Track, TrackShort
 
 import discord
 from discord import Interaction, ApplicationContext, RawReactionActionEvent
@@ -49,7 +50,7 @@ class VoiceExtension(BaseBot):
         else:
             track = cast(Track, Track.de_json(
                 guild['current_track'],
-                client=YMClient()  # type: ignore
+                client=await self.init_ym_client(ctx)  # type: ignore
             ))
 
             embed = await generate_item_embed(track, guild['vibing'])
@@ -155,7 +156,7 @@ class VoiceExtension(BaseBot):
 
         track = cast(Track, Track.de_json(
             guild['current_track'],
-            client=YMClient()  # type: ignore
+            client=await self.init_ym_client(ctx)  # type: ignore
         ))
 
         embed = await generate_item_embed(track, guild['vibing'])
