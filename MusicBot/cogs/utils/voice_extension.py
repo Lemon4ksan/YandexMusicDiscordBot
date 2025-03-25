@@ -907,6 +907,10 @@ class VoiceExtension(BaseBot):
         if guild['current_menu']:
             await self.update_menu_embed_and_view(ctx, button_callback=button_callback)
 
+        if not guild['vibing']:
+            # Giving FFMPEG enough time to process the audio file
+            await asyncio.sleep(1)
+
         loop = self.get_current_event_loop(ctx)
         try:
             vc.play(song, after=lambda exc: asyncio.run_coroutine_threadsafe(self.play_next_track(ctx, after=True), loop))

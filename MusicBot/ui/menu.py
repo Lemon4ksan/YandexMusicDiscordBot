@@ -194,8 +194,6 @@ class SwitchTrackButton(Button, VoiceExtension):
             )
             return
 
-        await interaction.response.defer()
-
         if callback_type == 'next':
             title = await self.play_next_track(interaction, button_callback=True)
         else:
@@ -383,8 +381,6 @@ class MyVibeButton(Button, VoiceExtension):
                 }
             )
             return
-        
-        await interaction.response.defer()
 
         if track:
             logging.info(f"[MENU] Playing vibe for track '{track["id"]}'")
